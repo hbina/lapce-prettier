@@ -1,30 +1,23 @@
-name = "<plugin-name>"
-version = "0.0.0"
-author = "<your name>"
-display-name = "<plugin-display-name>"
-description = "<plugin-description>"
-wasm = "bin/<plugin-name>.wasm"
+name = "lapce-prettier"
+version = "2023.1.0"
+display-name = "Lapce Prettier"
+author = "Hanif Ariffin (hbina)"
+description = "Prettier plugin for Lapce"
+icon = "icon.png"
+repository = "https://github.com/hbina/lapce-prettier"
+wasm = "lapce-prettier.wasm"
 
 [activation]
-language = []
-workspace-contains = []
+language = ["javascript","typescript","javascriptreact","typescriptreact"]
+workspace-contains = [
+    "**/**.js",
+    "**/**.ts",
+    "**/**.jsx",
+    "**/**.tsx",
+]
 
-[config."lsp.serverPath"]
+[config.prettierPath]
 default = ""
-description = "Path to custom LSP executable"
-
-# [config."lsp.serverArgs"]
-# default = []
-# description = ""
-
-# [config."lspSettingArray"]
-# default = []
-# description = ""
-
-# [config."lspSettingString"]
-# default = ""
-# description = ""
-
-# [config."lspSettingBool"]
-# default = false
-# description = ""
+description = """
+Where the Prettier binary is located
+"""
