@@ -3,6 +3,8 @@
 .AppleDouble
 .LSOverride
 justfile
+.vscode/
+.lapce/
 
 # Icon must end with two \r
 Icon

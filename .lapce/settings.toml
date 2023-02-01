@@ -1,2 +1,0 @@
-[lapce-rust.checkOnSave]
-command = "clippy"
