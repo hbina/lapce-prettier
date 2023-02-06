@@ -2,7 +2,7 @@ use lapce_plugin::{
     psp_types::{
         lsp_types::{
             request::{Formatting, Initialize},
-            DocumentFormattingParams, InitializeParams, InitializeResult, MessageType, OneOf,
+            DocumentFormattingParams, InitializeParams, InitializeResult, OneOf,
             ServerCapabilities,
         },
         ExecuteProcessResult, Request,
@@ -41,7 +41,7 @@ impl State {
         serde_json::to_value(server_params).map_err(|s| s.to_string())
     }
 
-    fn handle_formatting(&self, id: u64, params: &DocumentFormattingParams) -> Result<(), String> {
+    fn handle_formatting(&self, params: &DocumentFormattingParams) -> Result<Value, String> {
         let file_path = params
             .text_document
             .uri
@@ -56,13 +56,9 @@ impl State {
 
         let prettier_path = self.prettier_path.clone().unwrap_or("prettier".to_string());
 
-        PLUGIN_RPC.window_log_message(
-            MessageType::LOG,
-            format!("file_path:{file_path} prettier_path:{prettier_path}"),
-        );
         // Hack because we can't send the document in the result
         std::thread::sleep(std::time::Duration::from_secs(2));
-        match PLUGIN_RPC
+        PLUGIN_RPC
             .execute_process(
                 prettier_path,
                 vec![
@@ -72,12 +68,6 @@ impl State {
             )
             .map(|ExecuteProcessResult { success }| Value::Bool(success))
             .map_err(|e| e.to_string())
-        {
-            Ok(params) => PLUGIN_RPC.host_success(id, params),
-            Err(err) => PLUGIN_RPC.host_error(id, err),
-        }
-
-        Ok(())
     }
 }
 
@@ -88,37 +78,24 @@ impl LapcePlugin for State {
             Initialize::METHOD => {
                 let params: InitializeParams = serde_json::from_value(client_params).unwrap();
                 match self.handle_init(&params) {
-                    Ok(result) => {
-                        PLUGIN_RPC.host_success(id, result);
-                    }
-                    Err(err) => {
-                        PLUGIN_RPC.host_error(id, err);
-                    }
+                    Ok(ok) => PLUGIN_RPC.host_success(id, ok).unwrap(),
+                    Err(err) => PLUGIN_RPC.host_error(id, err).unwrap(),
                 };
             }
             Formatting::METHOD => {
                 let params =
                     serde_json::from_value::<DocumentFormattingParams>(client_params).unwrap();
-                match self.handle_formatting(id, &params) {
-                    Ok(_) => {}
-                    Err(err) => {
-                        PLUGIN_RPC.host_error(id, err);
-                    }
+                match self.handle_formatting(&params) {
+                    Ok(ok) => PLUGIN_RPC.host_success(id, ok).unwrap(),
+                    Err(err) => PLUGIN_RPC.host_error(id, err).unwrap(),
                 }
             }
-            _ => {
-                PLUGIN_RPC.host_error(
+            _ => PLUGIN_RPC
+                .host_error(
                     id,
                     format!("Prettier plugin does not support method '{method}'"),
-                );
-            }
+                )
+                .unwrap(),
         }
-    }
-
-    fn handle_notification(&mut self, method: String, params: Value) {
-        PLUGIN_RPC.window_log_message(
-            MessageType::LOG,
-            format!("handle_notification method:{method} params:{params}"),
-        );
     }
 }
